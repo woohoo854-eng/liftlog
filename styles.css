@@ -64,7 +64,7 @@ button:disabled { opacity: .3; }
   padding-bottom: env(safe-area-inset-bottom);
 }
 .bottom-nav a {
-  flex: 1; max-width: calc(var(--max) / 2); min-height: 56px;
+  flex: 1; max-width: calc(var(--max) / 3); min-height: 56px;
   display: flex; align-items: center; justify-content: center;
   color: var(--muted); font-weight: 700;
 }
@@ -107,16 +107,6 @@ body.logging .bottom-nav { display: none; }
   background: var(--good); color: var(--on-good); font-size: .82rem; font-weight: 800;
 }
 
-details.add { margin-top: 18px; }
-details.add summary {
-  min-height: var(--tap); display: flex; align-items: center;
-  font-weight: 700; color: var(--muted); cursor: pointer; list-style: none;
-}
-details.add summary::-webkit-details-marker { display: none; }
-.add-item {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  min-height: var(--tap); padding: 0 4px; border-bottom: 1px solid var(--border);
-}
 .picker { display: grid; gap: 10px; margin-top: 16px; }
 
 /* ---- Set Logger ---- */
@@ -200,6 +190,62 @@ details.add summary::-webkit-details-marker { display: none; }
   background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
 }
 .version { margin-top: 24px; text-align: center; }
+
+/* ---- v1.1: preview, add, variants, units, history, editor ---- */
+.banner.preview { color: var(--text); border-color: var(--muted); font-weight: 400; }
+.banner.preview b { color: var(--accent); }
+.add-btn { display: flex; width: 100%; margin-top: 18px; font-weight: 700; }
+.badge.warn { background: var(--accent); color: var(--on-accent); }
+
+.panel.list { padding: 0 14px; }
+.list-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  min-height: var(--tap); border-bottom: 1px solid var(--border);
+}
+.list-item:last-child { border-bottom: none; }
+
+.variants { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+.field-label .unit-toggle { margin-left: auto; }
+.unit-toggle { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.unit-toggle button {
+  min-height: var(--tap); min-width: 56px; padding: 0 10px; border: none; border-radius: 0;
+  background: var(--surface-2); font-size: .9rem; font-weight: 700; color: var(--muted);
+}
+.unit-toggle button.on { background: var(--accent); color: var(--on-accent); }
+.help { margin: -2px 0 6px; color: var(--muted); font-size: .82rem; }
+.derived { min-height: 1.4em; margin: 6px 0 0; font-weight: 700; color: var(--accent); }
+
+.chart { margin: 12px 0; }
+.chart-label { font-size: .85rem; color: var(--muted); font-weight: 700; margin-bottom: 4px; }
+.chart svg { display: block; width: 100%; height: auto; }
+.chart .grid { stroke: var(--border); stroke-width: 1; }
+.chart .axis { fill: var(--muted); font-size: 11px; }
+.chart .line { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linejoin: round; }
+.chart .dot { fill: var(--accent); }
+.change { margin: 6px 0 0; font-weight: 700; }
+.change.good { color: var(--good); }
+.change.warn { color: var(--danger); }
+
+.session { margin-top: 16px; }
+.session-head { display: flex; gap: 10px; align-items: baseline; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
+.set-row .button { min-width: var(--tap); padding: 0 12px; }
+.add-set { display: flex; align-items: center; min-height: var(--tap); color: var(--accent); font-weight: 700; }
+
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.two label { display: flex; flex-direction: column; min-width: 0; }
+.two input, .two select {
+  width: 100%; min-height: var(--tap); padding: 0 10px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+}
+.danger { color: var(--danger); }
+.actionbar.two { grid-template-columns: 1fr 2fr; }
+.actionbar.two button { font-size: 1.1rem; }
+
+.bar-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: var(--tap); }
+.bar-row input {
+  width: 80px; min-height: var(--tap); text-align: center; font-weight: 700;
+  background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
+}
 
 /* ---- toast ---- */
 #toast {

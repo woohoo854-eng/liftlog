@@ -2,3 +2,6 @@
 CLAUDE.md
 SPEC.md
 PROMPTS.md
+CHANGES_*.md
+*.csv
+liftlog-backup-*.json

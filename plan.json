@@ -1,50 +1,443 @@
 {
-  "version": 1,
+  "version": 2,
   "progression": "Double progression: when all sets hit the top of the rep range at 1 to 2 RIR, add weight next session. Assisted moves: reduce assist.",
-  "defaults": { "rest": 60, "step": { "Machine": 5, "Dumbbell": 5, "Cable": 5, "Bench": 0 } },
+  "defaults": {
+    "rest": 60,
+    "step": {
+      "Machine": 5,
+      "Dumbbell": 5,
+      "Cable": 5,
+      "Bench": 0
+    }
+  },
   "lists": {
     "upper": [
-      { "id": "chest-press", "slot": "A1", "name": "Chest Press", "machine": 1, "equipment": "Machine", "sets": 3, "repMin": 8, "repMax": 12, "note": "Superset with A2", "rest": 90 },
-      { "id": "row", "slot": "A2", "name": "Row", "machine": 2, "equipment": "Machine", "sets": 3, "repMin": 8, "repMax": 12, "note": "Squeeze shoulder blades at the end" },
-      { "id": "db-incline-press", "slot": "B1", "name": "DB Incline Bench Press", "machine": null, "equipment": "Dumbbell", "sets": 3, "repMin": 8, "repMax": 12, "note": "Bench at 30 to 45 degrees" },
-      { "id": "lat-pulldown", "slot": "B2", "name": "Lat Pulldown", "machine": null, "equipment": "Machine", "sets": 3, "repMin": 8, "repMax": 12, "note": "Pull to upper chest, no leaning back" },
-      { "id": "overhead-press", "slot": "C1", "name": "Overhead Press", "machine": 3, "equipment": "Machine", "sets": 3, "repMin": 8, "repMax": 12, "note": "" },
-      { "id": "face-pull", "slot": "C2", "name": "Face Pull", "machine": null, "equipment": "Cable", "sets": 3, "repMin": 12, "repMax": 15, "note": "Rope, pull to forehead, elbows high" },
-      { "id": "cable-lateral-raise", "slot": "D1", "name": "Cable Lateral Raise", "machine": null, "equipment": "Cable", "sets": 3, "repMin": 12, "repMax": 15, "note": "One arm at a time, low pulley", "perSide": true },
-      { "id": "arm-curl", "slot": "D2", "name": "Arm Curl", "machine": 5, "equipment": "Machine", "sets": 3, "repMin": 10, "repMax": 12, "note": "" },
-      { "id": "arm-extension", "slot": "D3", "name": "Arm Extension", "machine": 6, "equipment": "Machine", "sets": 3, "repMin": 10, "repMax": 15, "note": "Tri-set D1/D2/D3, rest after the round" }
+      {
+        "id": "chest-press",
+        "slot": "A1",
+        "name": "Chest Press",
+        "machine": 1,
+        "equipment": "Machine",
+        "sets": 3,
+        "repMin": 8,
+        "repMax": 12,
+        "note": "Superset with A2",
+        "rest": 90,
+        "unit": "lb"
+      },
+      {
+        "id": "row",
+        "slot": "A2",
+        "name": "Row",
+        "machine": 2,
+        "equipment": "Machine",
+        "sets": 3,
+        "repMin": 8,
+        "repMax": 12,
+        "note": "Squeeze shoulder blades at the end",
+        "unit": "lb"
+      },
+      {
+        "id": "db-incline-press",
+        "slot": "B1",
+        "name": "Incline Bench Press",
+        "machine": null,
+        "equipment": "Dumbbell",
+        "sets": 3,
+        "repMin": 8,
+        "repMax": 12,
+        "note": "Bench at 30 to 45 degrees",
+        "unit": "lb",
+        "variants": [
+          {
+            "key": "dumbbell",
+            "label": "Dumbbell",
+            "unit": "lb",
+            "note": "Log one dumbbell's weight"
+          },
+          {
+            "key": "barbell",
+            "label": "Barbell",
+            "unit": "lb",
+            "barWeight": 45,
+            "perSideEntry": true
+          }
+        ]
+      },
+      {
+        "id": "lat-pulldown",
+        "slot": "B2",
+        "name": "Lat Pulldown",
+        "machine": null,
+        "equipment": "Machine",
+        "sets": 3,
+        "repMin": 8,
+        "repMax": 12,
+        "note": "Pull to upper chest, no leaning back",
+        "unit": "level"
+      },
+      {
+        "id": "overhead-press",
+        "slot": "C1",
+        "name": "Overhead Press",
+        "machine": 3,
+        "equipment": "Machine",
+        "sets": 3,
+        "repMin": 8,
+        "repMax": 12,
+        "note": "",
+        "unit": "level"
+      },
+      {
+        "id": "face-pull",
+        "slot": "C2",
+        "name": "Face Pull",
+        "machine": null,
+        "equipment": "Cable",
+        "sets": 3,
+        "repMin": 12,
+        "repMax": 15,
+        "note": "Rope, pull to forehead, elbows high",
+        "unit": "level"
+      },
+      {
+        "id": "cable-lateral-raise",
+        "slot": "D1",
+        "name": "Cable Lateral Raise",
+        "machine": null,
+        "equipment": "Cable",
+        "sets": 3,
+        "repMin": 12,
+        "repMax": 15,
+        "note": "One arm at a time, low pulley",
+        "perSide": true,
+        "unit": "level"
+      },
+      {
+        "id": "arm-curl",
+        "slot": "D2",
+        "name": "Arm Curl",
+        "machine": 5,
+        "equipment": "Machine",
+        "sets": 3,
+        "repMin": 10,
+        "repMax": 12,
+        "note": "",
+        "unit": "lb",
+        "variants": [
+          {
+            "key": "machine",
+            "label": "Machine 5",
+            "unit": "lb"
+          },
+          {
+            "key": "ez-standing",
+            "label": "EZ Bar (standing)",
+            "unit": "lb",
+            "barWeight": 20,
+            "barWeightConfirmed": false,
+            "perSideEntry": true
+          },
+          {
+            "key": "dumbbell",
+            "label": "Dumbbell",
+            "unit": "lb"
+          }
+        ]
+      },
+      {
+        "id": "arm-extension",
+        "slot": "D3",
+        "name": "Arm Extension",
+        "machine": 6,
+        "equipment": "Machine",
+        "sets": 3,
+        "repMin": 10,
+        "repMax": 15,
+        "note": "Tri-set D1/D2/D3, rest after the round",
+        "unit": "lb",
+        "variants": [
+          {
+            "key": "machine",
+            "label": "Machine 6",
+            "unit": "lb"
+          },
+          {
+            "key": "cable-pushdown",
+            "label": "Cable Pushdown",
+            "unit": "level"
+          }
+        ]
+      }
     ],
     "lower": [
-      { "id": "leg-press", "slot": "A", "name": "Leg Press", "machine": 10, "equipment": "Machine", "sets": 3, "repMin": 8, "repMax": 12, "note": "Rest 90 sec. Don't lock knees", "rest": 90 },
-      { "id": "db-rdl", "slot": "B1", "name": "DB Romanian Deadlift", "machine": null, "equipment": "Dumbbell", "sets": 3, "repMin": 8, "repMax": 12, "note": "Stop at hamstring stretch, flat back" },
-      { "id": "leg-extension", "slot": "B2", "name": "Leg Extension", "machine": 9, "equipment": "Machine", "sets": 3, "repMin": 10, "repMax": 15, "note": "" },
-      { "id": "seated-leg-curl", "slot": "C1", "name": "Seated Leg Curl", "machine": 8, "equipment": "Machine", "sets": 3, "repMin": 10, "repMax": 15, "note": "" },
-      { "id": "db-calf-raise", "slot": "C2", "name": "DB Standing Calf Raise", "machine": null, "equipment": "Dumbbell", "sets": 3, "repMin": 12, "repMax": 20, "note": "Pause 1 sec at the bottom stretch" },
-      { "id": "hip-abduction", "slot": "D1", "name": "Hip Abduction", "machine": 7, "equipment": "Machine", "sets": 2, "repMin": 15, "repMax": 20, "note": "Knees out" },
-      { "id": "hip-adduction", "slot": "D2", "name": "Hip Adduction", "machine": 7, "equipment": "Machine", "sets": 2, "repMin": 15, "repMax": 20, "note": "Same machine, swap pads" },
-      { "id": "back-extension", "slot": "E1", "name": "Back Extension", "machine": 11, "equipment": "Machine", "sets": 2, "repMin": 12, "repMax": 15, "note": "Hold a DB to chest to progress" },
-      { "id": "cable-crunch", "slot": "E2", "name": "Cable Crunch", "machine": null, "equipment": "Cable", "sets": 3, "repMin": 12, "repMax": 20, "note": "Kneel, rope behind head, curl ribs to hips" }
+      {
+        "id": "leg-press",
+        "slot": "A",
+        "name": "Leg Press",
+        "machine": 10,
+        "equipment": "Machine",
+        "sets": 3,
+        "repMin": 8,
+        "repMax": 12,
+        "note": "Rest 90 sec. Don't lock knees",
+        "rest": 90,
+        "unit": "lb"
+      },
+      {
+        "id": "db-rdl",
+        "slot": "B1",
+        "name": "DB Romanian Deadlift",
+        "machine": null,
+        "equipment": "Dumbbell",
+        "sets": 3,
+        "repMin": 8,
+        "repMax": 12,
+        "note": "Stop at hamstring stretch, flat back",
+        "unit": "lb"
+      },
+      {
+        "id": "leg-extension",
+        "slot": "B2",
+        "name": "Leg Extension",
+        "machine": 9,
+        "equipment": "Machine",
+        "sets": 3,
+        "repMin": 10,
+        "repMax": 15,
+        "note": "",
+        "unit": "lb"
+      },
+      {
+        "id": "seated-leg-curl",
+        "slot": "C1",
+        "name": "Seated Leg Curl",
+        "machine": 8,
+        "equipment": "Machine",
+        "sets": 3,
+        "repMin": 10,
+        "repMax": 15,
+        "note": "",
+        "unit": "lb"
+      },
+      {
+        "id": "db-calf-raise",
+        "slot": "C2",
+        "name": "DB Standing Calf Raise",
+        "machine": null,
+        "equipment": "Dumbbell",
+        "sets": 3,
+        "repMin": 12,
+        "repMax": 20,
+        "note": "Pause 1 sec at the bottom stretch",
+        "unit": "lb"
+      },
+      {
+        "id": "hip-abduction",
+        "slot": "D1",
+        "name": "Hip Abduction",
+        "machine": 7,
+        "equipment": "Machine",
+        "sets": 2,
+        "repMin": 15,
+        "repMax": 20,
+        "note": "Knees out",
+        "unit": "lb"
+      },
+      {
+        "id": "hip-adduction",
+        "slot": "D2",
+        "name": "Hip Adduction",
+        "machine": 7,
+        "equipment": "Machine",
+        "sets": 2,
+        "repMin": 15,
+        "repMax": 20,
+        "note": "Same machine, swap pads",
+        "unit": "lb"
+      },
+      {
+        "id": "back-extension",
+        "slot": "E1",
+        "name": "Back Extension",
+        "machine": 11,
+        "equipment": "Machine",
+        "sets": 2,
+        "repMin": 12,
+        "repMax": 15,
+        "note": "Hold a DB to chest to progress",
+        "unit": "lb"
+      },
+      {
+        "id": "cable-crunch",
+        "slot": "E2",
+        "name": "Cable Crunch",
+        "machine": null,
+        "equipment": "Cable",
+        "sets": 3,
+        "repMin": 12,
+        "repMax": 20,
+        "note": "Kneel, rope behind head, curl ribs to hips",
+        "unit": "level"
+      }
     ],
     "full": [
-      { "id": "db-goblet-squat", "slot": "A1", "name": "DB Goblet Squat", "machine": null, "equipment": "Dumbbell", "sets": 3, "repMin": 8, "repMax": 12, "note": "Rest 75 to 90 sec", "rest": 90 },
-      { "id": "assisted-chin-up", "slot": "A2", "name": "Assisted Chin-Up", "machine": null, "equipment": "Machine", "sets": 3, "repMin": 6, "repMax": 10, "note": "Log the assist weight; less = stronger", "assisted": true },
-      { "id": "db-bulgarian-split-squat", "slot": "B1", "name": "DB Bulgarian Split Squat", "machine": null, "equipment": "Dumbbell", "sets": 3, "repMin": 8, "repMax": 12, "note": "Per leg; rear foot on bench", "perSide": true },
-      { "id": "assisted-dip", "slot": "B2", "name": "Assisted Dip", "machine": null, "equipment": "Machine", "sets": 3, "repMin": 8, "repMax": 12, "note": "Log the assist weight", "assisted": true },
-      { "id": "one-arm-db-row", "slot": "C1", "name": "One-Arm DB Row", "machine": null, "equipment": "Dumbbell", "sets": 3, "repMin": 8, "repMax": 12, "note": "Per side; log one side's weight", "perSide": true },
-      { "id": "rear-delt-fly", "slot": "C2", "name": "Rear Delt Fly", "machine": 4, "equipment": "Machine", "sets": 2, "repMin": 12, "repMax": 15, "note": "Face the pad, reverse fly" },
-      { "id": "db-hammer-curl", "slot": "D1", "name": "DB Hammer Curl", "machine": null, "equipment": "Dumbbell", "sets": 2, "repMin": 10, "repMax": 12, "note": "" },
-      { "id": "db-overhead-triceps-ext", "slot": "D2", "name": "DB Overhead Triceps Ext", "machine": null, "equipment": "Dumbbell", "sets": 2, "repMin": 10, "repMax": 12, "note": "One DB, both hands, seated" }
+      {
+        "id": "db-goblet-squat",
+        "slot": "A1",
+        "name": "DB Goblet Squat",
+        "machine": null,
+        "equipment": "Dumbbell",
+        "sets": 3,
+        "repMin": 8,
+        "repMax": 12,
+        "note": "Rest 75 to 90 sec",
+        "rest": 90,
+        "unit": "lb"
+      },
+      {
+        "id": "assisted-chin-up",
+        "slot": "A2",
+        "name": "Assisted Chin-Up",
+        "machine": null,
+        "equipment": "Machine",
+        "sets": 3,
+        "repMin": 6,
+        "repMax": 10,
+        "note": "Log the plate number; app converts to assist lb. Higher number = more help",
+        "assisted": true,
+        "unit": "level",
+        "assistChart": true
+      },
+      {
+        "id": "db-bulgarian-split-squat",
+        "slot": "B1",
+        "name": "DB Bulgarian Split Squat",
+        "machine": null,
+        "equipment": "Dumbbell",
+        "sets": 3,
+        "repMin": 8,
+        "repMax": 12,
+        "note": "Per leg; rear foot on bench",
+        "perSide": true,
+        "unit": "lb"
+      },
+      {
+        "id": "assisted-dip",
+        "slot": "B2",
+        "name": "Assisted Dip",
+        "machine": null,
+        "equipment": "Machine",
+        "sets": 3,
+        "repMin": 8,
+        "repMax": 12,
+        "note": "Log the plate number; app converts to assist lb. Higher number = more help",
+        "assisted": true,
+        "unit": "level",
+        "assistChart": true
+      },
+      {
+        "id": "one-arm-db-row",
+        "slot": "C1",
+        "name": "One-Arm DB Row",
+        "machine": null,
+        "equipment": "Dumbbell",
+        "sets": 3,
+        "repMin": 8,
+        "repMax": 12,
+        "note": "Per side; log one side's weight",
+        "perSide": true,
+        "unit": "lb"
+      },
+      {
+        "id": "rear-delt-fly",
+        "slot": "C2",
+        "name": "Rear Delt Fly",
+        "machine": 4,
+        "equipment": "Machine",
+        "sets": 2,
+        "repMin": 12,
+        "repMax": 15,
+        "note": "Face the pad, reverse fly",
+        "unit": "lb"
+      },
+      {
+        "id": "db-hammer-curl",
+        "slot": "D1",
+        "name": "DB Hammer Curl",
+        "machine": null,
+        "equipment": "Dumbbell",
+        "sets": 2,
+        "repMin": 10,
+        "repMax": 12,
+        "note": "",
+        "unit": "lb"
+      },
+      {
+        "id": "db-overhead-triceps-ext",
+        "slot": "D2",
+        "name": "DB Overhead Triceps Ext",
+        "machine": null,
+        "equipment": "Dumbbell",
+        "sets": 2,
+        "repMin": 10,
+        "repMax": 12,
+        "note": "One DB, both hands, seated",
+        "unit": "lb"
+      }
     ],
     "optional": [
-      { "id": "sit-ups", "slot": "F", "name": "Sit-Ups", "machine": null, "equipment": "Bench", "sets": 1, "repMin": null, "repMax": null, "note": "Log added weight (0 if bodyweight) and reps", "bodyweight": true }
+      {
+        "id": "sit-ups",
+        "slot": "F",
+        "name": "Sit-Ups",
+        "machine": null,
+        "equipment": "Bench",
+        "sets": 1,
+        "repMin": null,
+        "repMax": null,
+        "note": "Log added weight (0 if bodyweight) and reps",
+        "bodyweight": true,
+        "unit": "lb"
+      }
     ]
   },
   "days": [
-    { "label": "Tue: Upper", "weekday": 2, "list": "upper" },
-    { "label": "Wed: Lower", "weekday": 3, "list": "lower" },
-    { "label": "Thu: Upper", "weekday": 4, "list": "upper" },
-    { "label": "Fri: Lower", "weekday": 5, "list": "lower" },
-    { "label": "Sat: Full Body", "weekday": 6, "list": "full" }
+    {
+      "label": "Tue: Upper",
+      "weekday": 2,
+      "list": "upper"
+    },
+    {
+      "label": "Wed: Lower",
+      "weekday": 3,
+      "list": "lower"
+    },
+    {
+      "label": "Thu: Upper",
+      "weekday": 4,
+      "list": "upper"
+    },
+    {
+      "label": "Fri: Lower",
+      "weekday": 5,
+      "list": "lower"
+    },
+    {
+      "label": "Sat: Full Body",
+      "weekday": 6,
+      "list": "full"
+    }
   ],
-  "machineKey": "1 Chest Press, 2 Row, 3 Overhead Press, 4 Fly/Rear Delt, 5 Arm Curl, 6 Arm Extension, 7 Hip Abduction/Adduction, 8 Seated Leg Curl, 9 Leg Extension, 10 Leg Press, 11 Back Extension"
+  "machineKey": "1 Chest Press, 2 Row, 3 Overhead Press, 4 Fly/Rear Delt, 5 Arm Curl, 6 Arm Extension, 7 Hip Abduction/Adduction, 8 Seated Leg Curl, 9 Leg Extension, 10 Leg Press, 11 Back Extension",
+  "units": {
+    "lb": "Pounds",
+    "level": "Plate or pin number on the stack (no pound markings)"
+  },
+  "assistChart": {
+    "machine": "Cybex Assisted Chin-Up/Dip",
+    "formula": "assistLb = 6 * level - 8",
+    "minLevel": 4,
+    "maxLevel": 20
+  }
 }

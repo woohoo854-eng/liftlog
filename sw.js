@@ -1,6 +1,6 @@
 // Cache-first offline service worker. Bump CACHE_VERSION on every change to a cached file.
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const CACHE = `liftlog-${CACHE_VERSION}`;
 const FILES = [
   './',

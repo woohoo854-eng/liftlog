@@ -1,7 +1,8 @@
-// IndexedDB wrapper. Database "liftlog" v1: `sets` (keyPath id) and `meta` (key/value).
+// IndexedDB wrapper. Database "liftlog": `sets` (keyPath id) and `meta` (key/value).
+// v2 adds per-set unit ("lb" | "level"), variant, perSide, assistLb; v1 sets are upgraded to unit "lb".
 
 const DB_NAME = 'liftlog';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 let dbPromise;
 
@@ -9,14 +10,29 @@ function open() {
   if (!dbPromise) {
     dbPromise = new Promise((resolve, reject) => {
       const req = indexedDB.open(DB_NAME, DB_VERSION);
-      req.onupgradeneeded = () => {
+      req.onupgradeneeded = event => {
         const db = req.result;
-        const sets = db.createObjectStore('sets', { keyPath: 'id' });
-        sets.createIndex('exerciseId', 'exerciseId');
-        sets.createIndex('date', 'date');
-        db.createObjectStore('meta');
+        if (event.oldVersion < 1) {
+          const sets = db.createObjectStore('sets', { keyPath: 'id' });
+          sets.createIndex('exerciseId', 'exerciseId');
+          sets.createIndex('date', 'date');
+          db.createObjectStore('meta');
+        }
+        if (event.oldVersion < 2) {
+          req.transaction.objectStore('sets').openCursor().onsuccess = e => {
+            const cursor = e.target.result;
+            if (!cursor) return;
+            if (!cursor.value.unit) cursor.update({ ...cursor.value, unit: 'lb' });
+            cursor.continue();
+          };
+        }
       };
-      req.onsuccess = () => resolve(req.result);
+      req.onsuccess = () => {
+        const db = req.result;
+        // A newer version opened elsewhere: let it upgrade.
+        db.onversionchange = () => db.close();
+        resolve(db);
+      };
       req.onerror = () => reject(req.error);
     });
   }
@@ -40,6 +56,7 @@ async function run(storeName, mode, fn) {
 
 export const addSet = set => run('sets', 'readwrite', s => s.add(set));
 export const putSet = set => run('sets', 'readwrite', s => s.put(set));
+export const getSet = id => run('sets', 'readonly', s => s.get(id));
 export const setsByExercise = id => run('sets', 'readonly', s => s.index('exerciseId').getAll(id));
 export const setsByDate = date => run('sets', 'readonly', s => s.index('date').getAll(date));
 export const allSets = () => run('sets', 'readonly', s => s.getAll());

@@ -2,7 +2,8 @@
 
 import { allSets, getMeta, setMeta, replaceAll, localDate } from './db.js';
 
-const CSV_COLUMNS = ['Date', 'Day', 'Exercise', 'Set #', 'Weight (lb)', 'Reps', 'RIR', 'Notes'];
+// Columns 1-8 must stay exactly as v1 so pasting into the Excel Log tab keeps working.
+const CSV_COLUMNS = ['Date', 'Day', 'Exercise', 'Set #', 'Weight (lb)', 'Reps', 'RIR', 'Notes', 'Variant', 'Unit', 'Assist (lb)'];
 
 function csvCell(value) {
   const s = value == null ? '' : String(value);
@@ -17,6 +18,9 @@ function mdy(iso) {
 
 const chronological = (a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt);
 
+// Sets saved before v1.1 have no unit; they were all pounds.
+const withUnit = s => ({ unit: 'lb', ...s });
+
 // range: 'new' (created after the last export) or 'all'. Demo rows never export.
 export async function setsForExport(range) {
   const sets = (await allSets()).filter(s => !s.demo);
@@ -25,11 +29,17 @@ export async function setsForExport(range) {
   return picked.sort(chronological);
 }
 
-export function csvFile(sets) {
+// exercises: Map of plan exercises by id. Exercise names come from the current plan so
+// renamed exercises match the tracker; ids no longer in the plan keep their stored name.
+export function csvFile(sets, exercises) {
   const lines = [CSV_COLUMNS.join(',')];
-  for (const s of sets) {
-    lines.push([mdy(s.date), s.dayLabel, s.exerciseName, s.setNumber, s.weight, s.reps, s.rir, s.notes]
-      .map(csvCell).join(','));
+  for (const raw of sets) {
+    const s = withUnit(raw);
+    const ex = exercises.get(s.exerciseId);
+    const variant = s.variant ? (ex?.variants?.find(v => v.key === s.variant)?.label ?? s.variant) : '';
+    const assist = ex?.assisted ? (s.assistLb ?? (s.unit === 'lb' ? s.weight : null)) : null;
+    lines.push([mdy(s.date), s.dayLabel, ex?.name ?? s.exerciseName, s.setNumber, s.weight, s.reps, s.rir, s.notes,
+      variant, s.unit, assist].map(csvCell).join(','));
   }
   // BOM so Excel reads UTF-8; CRLF line endings.
   const text = '﻿' + lines.join('\r\n') + '\r\n';
@@ -45,7 +55,7 @@ export async function markExported(sets) {
 export async function backupFile() {
   const sets = (await allSets()).filter(s => !s.demo).sort(chronological);
   const settings = await getMeta('settings');
-  const data = { app: 'liftlog', format: 1, exportedAt: new Date().toISOString(), settings, sets };
+  const data = { app: 'liftlog', format: 2, exportedAt: new Date().toISOString(), settings, sets };
   return new File([JSON.stringify(data, null, 1)], `liftlog-backup-${localDate()}.json`, { type: 'application/json' });
 }
 
@@ -61,7 +71,7 @@ export function parseBackup(text) {
 }
 
 export async function restoreBackup(data) {
-  await replaceAll(data.sets);
+  await replaceAll(data.sets.map(withUnit));
   if (data.settings) await setMeta('settings', data.settings);
 }
 
