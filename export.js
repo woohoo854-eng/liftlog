@@ -52,11 +52,14 @@ export async function markExported(sets) {
   if (newest && (!last || newest > last)) await setMeta('lastExport', newest);
 }
 
-export async function backupFile() {
+// Chrome on Android refuses to share .json files ("Permission denied"), so a shared backup goes
+// out as .txt; Restore accepts either.
+export async function backupFile({ forShare = false } = {}) {
   const sets = (await allSets()).filter(s => !s.demo).sort(chronological);
   const settings = await getMeta('settings');
   const data = { app: 'liftlog', format: 2, exportedAt: new Date().toISOString(), settings, sets };
-  return new File([JSON.stringify(data, null, 1)], `liftlog-backup-${localDate()}.json`, { type: 'application/json' });
+  const [ext, type] = forShare ? ['txt', 'text/plain'] : ['json', 'application/json'];
+  return new File([JSON.stringify(data, null, 1)], `liftlog-backup-${localDate()}.${ext}`, { type });
 }
 
 export const markBackedUp = () => setMeta('lastBackup', new Date().toISOString());
@@ -95,13 +98,18 @@ export function canShareFiles(name, type) {
   }
 }
 
-// Resolves true if shared, false if the user cancelled the share sheet.
+// Resolves 'shared', 'cancelled' (user closed the share sheet), or 'downloaded' (the browser
+// refused to share this file, so it was saved to Downloads instead).
 export async function shareFile(file) {
   try {
     await navigator.share({ files: [file], title: file.name });
-    return true;
+    return 'shared';
   } catch (err) {
-    if (err.name === 'AbortError') return false;
+    if (err.name === 'AbortError') return 'cancelled';
+    if (err.name === 'NotAllowedError' || err.name === 'TypeError') {
+      downloadFile(file);
+      return 'downloaded';
+    }
     throw err;
   }
 }

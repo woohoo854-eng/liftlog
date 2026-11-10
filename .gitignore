@@ -5,3 +5,4 @@ PROMPTS.md
 CHANGES_*.md
 *.csv
 liftlog-backup-*.json
+liftlog-backup-*.txt

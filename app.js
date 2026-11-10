@@ -977,7 +977,7 @@ async function renderSettings() {
   ]);
   const backupOld = daysSince(lastBackup) > BACKUP_WARN_DAYS;
   const canShareCsv = exp.canShareFiles('x.csv', 'text/csv');
-  const canShareJson = exp.canShareFiles('x.json', 'application/json');
+  const canShareBackup = exp.canShareFiles('x.txt', 'text/plain');
   const equipment = Object.keys(settings.steps);
   const bars = [...exercises.values()].flatMap(ex => (ex.variants ?? []).filter(v => v.barWeight != null).map(v => ({ ex, v })));
 
@@ -1003,10 +1003,10 @@ async function renderSettings() {
       <p class="${backupOld ? 'warn' : 'muted'}">Last backup: ${lastBackup ? shortDate(localDate(new Date(lastBackup))) : 'never'}${backupOld ? ' — back up soon' : ''}</p>
       <div class="row">
         <button type="button" id="json-dl">Download</button>
-        ${canShareJson ? '<button type="button" id="json-share">Share</button>' : ''}
+        ${canShareBackup ? '<button type="button" id="json-share">Share</button>' : ''}
       </div>
       <div class="row">
-        <label class="button">Restore from backup<input type="file" id="json-in" accept=".json,application/json" hidden></label>
+        <label class="button">Restore from backup<input type="file" id="json-in" accept=".json,.txt,application/json,text/plain" hidden></label>
       </div>
       <p class="small warn">Your sets live only on this phone. Uninstalling the app or clearing Chrome's site data deletes them. Keep a recent backup.</p>
     </div>
@@ -1041,27 +1041,28 @@ async function renderSettings() {
 
   const range = () => app.querySelector('[name=range]:checked').value;
 
+  // Share, or download; a refused share falls back to a download. Returns false if cancelled.
+  async function deliver(file, share) {
+    if (!share) {
+      exp.downloadFile(file);
+      return true;
+    }
+    const result = await exp.shareFile(file);
+    if (result === 'downloaded') alert(`Sharing wasn't allowed, so ${file.name} was saved to Downloads instead.`);
+    return result !== 'cancelled';
+  }
+
   async function exportCsv(share) {
     const sets = await exp.setsForExport(range());
     if (!sets.length) return toast('No new sets to export');
-    const file = exp.csvFile(sets, exercises);
-    if (share) {
-      if (!(await exp.shareFile(file))) return;
-    } else {
-      exp.downloadFile(file);
-    }
+    if (!(await deliver(exp.csvFile(sets, exercises), share))) return;
     await exp.markExported(sets);
     toast(`Exported ${sets.length} sets`);
     renderSettings();
   }
 
   async function exportJson(share) {
-    const file = await exp.backupFile();
-    if (share) {
-      if (!(await exp.shareFile(file))) return;
-    } else {
-      exp.downloadFile(file);
-    }
+    if (!(await deliver(await exp.backupFile({ forShare: share }), share))) return;
     await exp.markBackedUp();
     toast('Backup saved');
     renderSettings();
