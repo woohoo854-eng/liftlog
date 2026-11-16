@@ -6,3 +6,6 @@ CHANGES_*.md
 *.csv
 liftlog-backup-*.json
 liftlog-backup-*.txt
+
+# Local sync tooling (phone + Excel)
+sync/
