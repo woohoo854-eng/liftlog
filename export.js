@@ -16,7 +16,8 @@ function mdy(iso) {
   return `${m}/${d}/${y}`;
 }
 
-const chronological = (a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt);
+// Sets with the same createdAt (e.g. added together by a data fix) fall back to set number.
+const chronological = (a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt) || a.setNumber - b.setNumber;
 
 // Sets saved before v1.1 have no unit; they were all pounds.
 const withUnit = s => ({ unit: 'lb', ...s });
