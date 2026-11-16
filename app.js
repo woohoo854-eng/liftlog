@@ -70,18 +70,33 @@ function barWeightFor(ex, v) {
   return { weight: saved ?? v.barWeight ?? 0, estimated: saved == null && v.barWeightConfirmed === false };
 }
 
+// Variant flags win; exercise-level flags apply only to exercises without variants (or as a fallback).
+const perDumbbellOf = (ex, v) => (ex.variants ? !!v?.perDumbbell : !!ex.perDumbbell);
+const dumbbellsOf = (ex, v) => v?.dumbbells ?? ex.dumbbells ?? 2;
+const isBodyweight = (ex, vkey) => findVariant(ex, vkey)?.bodyweight ?? !!ex.bodyweight;
+
+// settings.steps holds only steps changed by hand; plan.json supplies the rest.
+const stepDefault = eq => settings.steps[eq] ?? plan.defaults?.step?.[eq] ?? 5;
+
 function stepFor(ex, v, unit) {
   if (unit === 'level') return 1;
   if (v?.step != null) return v.step;
   if (ex.step != null) return ex.step;
-  return settings.steps[ex.equipment] ?? plan.defaults?.step?.[ex.equipment] ?? 5;
+  if (v?.perSideEntry) return stepDefault('Barbell');
+  if (perDumbbellOf(ex, v)) return stepDefault('Dumbbell');
+  return stepDefault(ex.equipment);
 }
 
 // Everything the weight field needs for one exercise + variant + unit.
 function model(ex, vkey, unit) {
   const v = findVariant(ex, vkey);
   const perSideEntry = unit === 'lb' && !!v?.perSideEntry;
-  return { ex, vkey, v, unit, perSideEntry, bar: perSideEntry ? barWeightFor(ex, v) : null, step: stepFor(ex, v, unit) };
+  const perDumbbell = unit === 'lb' && !perSideEntry && perDumbbellOf(ex, v);
+  return {
+    ex, vkey, v, unit, perSideEntry, perDumbbell, pair: perDumbbell && dumbbellsOf(ex, v) === 2,
+    bodyweight: isBodyweight(ex, vkey),
+    bar: perSideEntry ? barWeightFor(ex, v) : null, step: stepFor(ex, v, unit),
+  };
 }
 
 // What the weight box shows for a stored set: per-side weight for barbell entry, else the stored weight.
@@ -111,7 +126,7 @@ function fmtLoad(ex, s) {
     const assist = ex?.assistChart ? s.assistLb ?? toAssist(s.weight) : null;
     return `L${num(s.weight)}${assist != null ? ` (${num(assist)} lb)` : ''}`;
   }
-  if (ex?.bodyweight) return s.weight ? `BW+${num(s.weight)}` : 'BW';
+  if (ex && isBodyweight(ex, variantKeyOf(ex, s))) return s.weight ? `BW+${num(s.weight)}` : 'BW';
   if (s.perSide != null) return `${num(s.weight)} (${num(s.perSide)}/side)`;
   return num(s.weight);
 }
@@ -167,19 +182,67 @@ const hintBadge = h => (h ? `<span class="badge ${h.cls}">${h.text}</span>` : ''
 
 // ---------- data ----------
 
+// Before v1.2 the app saved every equipment step with the settings, which froze the plan.json v2
+// defaults on the phone. Saved steps equal to those old defaults are dropped once, so plan.json wins.
+const V2_STEP_DEFAULTS = { Machine: 5, Dumbbell: 5, Cable: 5 };
+
 async function loadSettings() {
-  const defaults = { keepAwake: true, steps: {}, unitOverrides: {}, barWeights: {} };
-  for (const ex of exercises.values()) {
-    const step = plan.defaults?.step?.[ex.equipment];
-    if (step) defaults.steps[ex.equipment] = step;
-  }
   const saved = (await getMeta('settings')) || {};
+  const steps = { ...saved.steps };
+  if (!saved.stepsAreOverrides) {
+    for (const [eq, v] of Object.entries(steps)) if (V2_STEP_DEFAULTS[eq] === v) delete steps[eq];
+  }
   return {
-    ...defaults, ...saved,
-    steps: { ...defaults.steps, ...saved.steps },
+    keepAwake: true, ...saved,
+    stepsAreOverrides: true,
+    steps,
     unitOverrides: { ...saved.unitOverrides },
     barWeights: { ...saved.barWeights },
+    closedAdded: [...(saved.closedAdded ?? [])],
+    closedRemoved: [...(saved.closedRemoved ?? [])],
   };
+}
+
+// ---------- closed dates ----------
+
+// plan.json supplies the defaults; settings record dates added or removed on this phone.
+function closedDates() {
+  const map = new Map();
+  for (const c of plan.closedDates ?? []) if (!settings.closedRemoved.includes(c.date)) map.set(c.date, c.label);
+  for (const c of settings.closedAdded) map.set(c.date, c.label);
+  return [...map].map(([date, label]) => ({ date, label })).sort((a, b) => a.date.localeCompare(b.date));
+}
+const closedOn = date => closedDates().find(c => c.date === date) ?? null;
+
+function addDays(iso, n) {
+  const [y, m, d] = iso.split('-').map(Number);
+  return localDate(new Date(y, m - 1, d + n));
+}
+const LONG_WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const isGymDay = iso => plan.days.some(d => d.weekday === weekdayOf(iso));
+
+// On an open gym day, the closed gym days between today and the next open gym day.
+function closuresAhead(today) {
+  if (!isGymDay(today) || closedOn(today)) return [];
+  const ahead = [];
+  for (let i = 1, d = addDays(today, 1); i <= 14; i++, d = addDays(d, 1)) {
+    if (!isGymDay(d)) continue;
+    const c = closedOn(d);
+    if (!c) break;
+    ahead.push({ ...c, weekday: weekdayOf(d) });
+  }
+  return ahead;
+}
+
+// The most recent earlier day of this Tue-Sat week with no sets carrying its label (any date).
+async function missedSession(today, dayLabel, todayHasAny) {
+  const wd = weekdayOf(today);
+  if (!isGymDay(today) || todayHasAny || (await getMeta('missedDismissed')) === today) return null;
+  const weekStart = addDays(today, 2 - wd);
+  const logged = new Set((await allSets()).filter(s => !s.demo && s.date >= weekStart && s.date <= today).map(s => s.dayLabel));
+  const earlier = plan.days.filter(d => d.weekday >= 2 && d.weekday < wd).sort((a, b) => b.weekday - a.weekday);
+  const missed = earlier.find(d => !logged.has(d.label));
+  return missed && missed.label !== dayLabel ? missed.label : null;
 }
 
 const saveSettings = () => setMeta('settings', settings);
@@ -194,12 +257,14 @@ function defaultVariant(ex, sets) {
   return latest ? variantKeyOf(ex, latest) : ex.variants[0].key;
 }
 
+// Returns { label, makeup }. On a closed date with no choice yet, label is null (day picker).
 async function currentDayLabel(today, todaySets) {
   const choice = await getMeta('dayChoice');
-  if (choice?.date === today && plan.days.some(d => d.label === choice.label)) return choice.label;
+  if (choice?.date === today && plan.days.some(d => d.label === choice.label)) return { label: choice.label, makeup: !!choice.makeup };
   const logged = todaySets[0]?.dayLabel;
-  if (logged) return logged;
-  return plan.days.find(d => d.weekday === new Date().getDay())?.label ?? null;
+  if (logged) return { label: logged, makeup: false };
+  if (closedOn(today)) return { label: null, makeup: false };
+  return { label: plan.days.find(d => d.weekday === weekdayOf(today))?.label ?? null, makeup: false };
 }
 
 // Today's session = sets with today's date AND the selected day label. The working list is the
@@ -209,7 +274,7 @@ async function loadToday(extraId) {
   const allToday = (await setsByDate(today)).filter(s => !s.demo);
   todayHasSets = allToday.length > 0;
   renderedDate = today;
-  const dayLabel = await currentDayLabel(today, allToday);
+  const { label: dayLabel, makeup } = await currentDayLabel(today, allToday);
   const todaySets = allToday.filter(s => s.dayLabel === dayLabel);
   const day = plan.days.find(d => d.label === dayLabel);
   const planned = day ? plan.lists[day.list] : [];
@@ -217,9 +282,9 @@ async function loadToday(extraId) {
   const counts = {};
   for (const s of todaySets) counts[s.exerciseId] = (counts[s.exerciseId] || 0) + 1;
   const added = [...exercises.values()].filter(e => !plannedIds.has(e.id) && (counts[e.id] || e.id === extraId));
-  const weekdayDay = plan.days.find(d => d.weekday === new Date().getDay());
+  const weekdayDay = plan.days.find(d => d.weekday === weekdayOf(today));
   const preview = !!weekdayDay && !!dayLabel && weekdayDay.label !== dayLabel;
-  return { today, todaySets, dayLabel, planned, added, list: [...planned, ...added], counts, preview };
+  return { today, todaySets, todayHasAny: allToday.length > 0, dayLabel, makeup, planned, added, list: [...planned, ...added], counts, preview };
 }
 
 function progress(ctx) {
@@ -255,13 +320,57 @@ async function updateWakeLock() {
   }
 }
 
+// ---------- rest timer ----------
+
+// Starts after each newly logged set: exercise rest from plan.json, else defaults.rest.
+// Counts down in a pill above the bottom bar, vibrates at zero, tap to dismiss.
+const restEl = document.getElementById('rest');
+let rest = null;
+
+function startRest(ex) {
+  const secs = ex.rest ?? plan.defaults?.rest ?? 60;
+  stopRest();
+  if (!(secs > 0)) return;
+  rest = { end: Date.now() + secs * 1000, buzzed: false };
+  rest.timer = setInterval(tickRest, 250);
+  tickRest();
+}
+
+function stopRest() {
+  if (rest) clearInterval(rest.timer);
+  rest = null;
+  restEl.hidden = true;
+  restEl.classList.remove('done');
+  document.body.classList.remove('resting');
+}
+
+function tickRest() {
+  const left = Math.ceil((rest.end - Date.now()) / 1000);
+  restEl.hidden = false;
+  document.body.classList.add('resting');
+  if (left > 0) {
+    restEl.innerHTML = `Rest <b>${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}</b><small>tap to skip</small>`;
+    return;
+  }
+  if (!rest.buzzed) {
+    rest.buzzed = true;
+    navigator.vibrate?.([300, 150, 300]);
+    restEl.classList.add('done');
+    restEl.innerHTML = '<b>Rest done</b>';
+  }
+  if (Date.now() - rest.end > 6000) stopRest();
+}
+
+restEl.addEventListener('click', stopRest);
+
 // ---------- shared set fields (logger + editor) ----------
 
 function weightLabel(m) {
   if (m.unit === 'level') return 'Level';
   if (m.perSideEntry) return 'Per side (lb)';
   if (m.ex.assisted) return 'Assist (lb)';
-  if (m.ex.bodyweight) return 'Added weight (lb)';
+  if (m.bodyweight) return 'Added weight (lb)';
+  if (m.perDumbbell) return 'Weight per dumbbell (lb)';
   return 'Weight (lb)';
 }
 
@@ -269,7 +378,7 @@ function weightSub(m) {
   return [
     m.ex.perSide && 'per side',
     m.ex.assisted && (m.unit === 'level' ? 'higher = more help' : 'lower = stronger'),
-    m.ex.bodyweight && m.unit === 'lb' && '0 = bodyweight',
+    m.bodyweight && m.unit === 'lb' && '0 = bodyweight',
   ].filter(Boolean).join(' · ');
 }
 
@@ -283,6 +392,7 @@ function derivedText(m, entry) {
     const assist = toAssist(val);
     return assist == null ? `Off chart (levels ${plan.assistChart.minLevel}–${plan.assistChart.maxLevel})` : `= ${num(assist)} lb assist`;
   }
+  if (m.pair && Number.isFinite(val)) return `${num(round2(2 * val))} lb total`;
   return '';
 }
 
@@ -401,9 +511,11 @@ function card(ex, ctx, info) {
 }
 
 function dayPicker(today) {
+  const closed = closedOn(today);
   return `
     <header class="top"><h1>${shortDate(today)}</h1></header>
-    <p class="muted">Gym's closed today. Which workout are you doing?</p>
+    ${closed ? `<div class="banner">Rec center closed: ${esc(closed.label)}</div>` : ''}
+    <p class="muted">${closed ? 'Working out anyway?' : "Gym's closed today."} Which workout are you doing?</p>
     <div class="picker">
       ${plan.days.map(d => `<button data-day="${esc(d.label)}">${esc(d.label)}</button>`).join('')}
     </div>`;
@@ -433,9 +545,27 @@ async function renderToday() {
     }
   }
 
-  const preview = ctx.preview
-    ? `<div class="banner preview"><b>Preview: ${esc(ctx.dayLabel)}</b><br>Sets you log now are saved as ${shortDate(ctx.today)}, ${esc(ctx.dayLabel)}.</div>`
-    : '';
+  const closed = closedOn(ctx.today);
+  const ahead = closuresAhead(ctx.today);
+  const missed = await missedSession(ctx.today, ctx.dayLabel, ctx.todayHasAny);
+
+  const notices = [
+    closed ? `<div class="banner">Rec center closed: ${esc(closed.label)}</div>` : '',
+    ahead.length ? `<div class="banner preview"><b>Closed ${ahead.map(c => `${LONG_WEEKDAYS[c.weekday]} (${esc(c.label)})`).join(', ')}.</b></div>` : '',
+    missed ? `
+      <div class="banner preview missed">
+        <b>${esc(missed)} was missed this week</b>
+        <div class="row">
+          <button type="button" class="primary" data-makeup="${esc(missed)}">Do ${esc(missed)} today</button>
+          <button type="button" data-keep>Keep today's plan</button>
+        </div>
+      </div>` : '',
+  ].join('');
+
+  const preview = !ctx.preview ? ''
+    : ctx.makeup
+      ? `<div class="banner preview"><b>Make-up: ${esc(ctx.dayLabel)}</b><br>Sets save as ${shortDate(ctx.today)}, ${esc(ctx.dayLabel)}.</div>`
+      : `<div class="banner preview"><b>Preview: ${esc(ctx.dayLabel)}</b><br>Sets you log now are saved as ${shortDate(ctx.today)}, ${esc(ctx.dayLabel)}.</div>`;
 
   const groupsHtml = groupBySuperset(ctx.planned).map(g => `
     <h2>${g.items.length > 1 ? `Superset ${esc(g.key)}` : esc(g.key)}</h2>
@@ -452,6 +582,7 @@ async function renderToday() {
         ${plan.days.map(d => `<option${d.label === ctx.dayLabel ? ' selected' : ''}>${esc(d.label)}</option>`).join('')}
       </select>
     </header>
+    ${notices}
     ${preview}
     <div class="progress">
       <div class="progress-text">${done} of ${total} sets</div>
@@ -466,6 +597,14 @@ async function renderToday() {
     await setMeta('dayChoice', { date: ctx.today, label: e.target.value });
     renderToday();
   };
+  app.querySelector('[data-makeup]')?.addEventListener('click', async e => {
+    await setMeta('dayChoice', { date: ctx.today, label: e.currentTarget.dataset.makeup, makeup: true });
+    renderToday();
+  });
+  app.querySelector('[data-keep]')?.addEventListener('click', async () => {
+    await setMeta('missedDismissed', ctx.today);
+    renderToday();
+  });
 }
 
 function bindDayChoice(today) {
@@ -531,7 +670,7 @@ async function renderLogger(exId, editId) {
   const lastMatch = last?.sets[position];
   const sameUnit = s => unitOf(s) === unit;
   const prior = [...variantToday].reverse().find(sameUnit) ?? [...(last?.sets ?? [])].reverse().find(sameUnit);
-  const entry = editing ? entryOf(m, editing) : prior ? entryOf(m, prior) : ex.bodyweight ? 0 : '';
+  const entry = editing ? entryOf(m, editing) : prior ? entryOf(m, prior) : m.bodyweight ? 0 : '';
 
   const idx = ctx.list.findIndex(e => e.id === exId);
   const prev = ctx.list[idx - 1];
@@ -607,6 +746,7 @@ async function renderLogger(exId, editId) {
         createdAt: new Date().toISOString(),
       });
       toast(`Set ${setNum} logged`);
+      startRest(ex);
     }
     todayHasSets = true;
     updateWakeLock();
@@ -688,9 +828,12 @@ function chartSeries(ex, sets) {
   const latest = newest(sets);
   if (!latest) return null;
   const unit = unitOf(latest);
-  const pool = ex.assistChart || ex.bodyweight ? sets : sets.filter(s => unitOf(s) === unit);
+  // Bodyweight can differ by variant (Sit-Ups: Decline Bench vs Ab Machine); chart the latest set's kind.
+  const bwOf = s => isBodyweight(ex, variantKeyOf(ex, s));
+  const bw = bwOf(latest);
+  const pool = ex.assistChart ? sets : bw ? sets.filter(bwOf) : sets.filter(s => !bwOf(s) && unitOf(s) === unit);
   let label, lowerIsBetter = false, value;
-  if (ex.bodyweight) {
+  if (bw) {
     label = 'Most reps';
     value = ss => Math.max(...ss.map(s => s.reps));
   } else if (ex.assisted) {
@@ -707,7 +850,10 @@ function chartSeries(ex, sets) {
   const byDate = new Map();
   for (const s of pool) byDate.set(s.date, [...(byDate.get(s.date) ?? []), s]);
   const points = [...byDate.keys()].sort().map(date => ({ date, value: value(byDate.get(date)) })).filter(p => p.value != null);
-  return { label, lowerIsBetter, points, onlyUnit: pool.length < sets.length ? unit : null };
+  const onlyNote = pool.length === sets.length ? null
+    : ex.variants && pool.every(s => bwOf(s) === bw) && sets.some(s => bwOf(s) !== bw) ? 'latest variant type only'
+      : `${unit} sets only`;
+  return { label, lowerIsBetter, points, onlyNote };
 }
 
 function chartHtml(series) {
@@ -732,7 +878,7 @@ function chartHtml(series) {
 
   return `
     <div class="panel chart">
-      <div class="chart-label">${esc(series.label)}${series.onlyUnit ? ` · ${series.onlyUnit} sets only` : ''}</div>
+      <div class="chart-label">${esc(series.label)}${series.onlyNote ? ` · ${series.onlyNote}` : ''}</div>
       <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(series.label)}">
         <line class="grid" x1="${L}" x2="${W - R}" y1="${y(max)}" y2="${y(max)}"/>
         <line class="grid" x1="${L}" x2="${W - R}" y1="${y(min)}" y2="${y(min)}"/>
@@ -978,7 +1124,9 @@ async function renderSettings() {
   const backupOld = daysSince(lastBackup) > BACKUP_WARN_DAYS;
   const canShareCsv = exp.canShareFiles('x.csv', 'text/csv');
   const canShareBackup = exp.canShareFiles('x.txt', 'text/plain');
-  const equipment = Object.keys(settings.steps);
+  const equipment = [...new Set([...Object.keys(plan.defaults?.step ?? {}), ...Object.keys(settings.steps)])];
+  const today = localDate();
+  const closed = closedDates().filter(c => c.date >= today);
   const bars = [...exercises.values()].flatMap(ex => (ex.variants ?? []).filter(v => v.barWeight != null).map(v => ({ ex, v })));
 
   app.innerHTML = `
@@ -1018,7 +1166,23 @@ async function renderSettings() {
 
     <h2>Weight steps (lb)</h2>
     <div class="panel steps">
-      ${equipment.map(eq => `<label>${esc(eq)}<input inputmode="decimal" data-eq="${esc(eq)}" value="${num(settings.steps[eq])}"></label>`).join('')}
+      ${equipment.map(eq => `<label>${esc(eq)}<input inputmode="decimal" data-eq="${esc(eq)}" value="${num(stepDefault(eq))}"></label>`).join('')}
+    </div>
+    <p class="muted small">0 hides the − / + buttons. Barbell applies to per-side entry.</p>
+
+    <h2>Closed days</h2>
+    <div class="panel">
+      ${closed.length ? `<div class="list">${closed.map(c => `
+        <div class="closed-row">
+          <span><b>${shortDate(c.date)}</b>${c.date.slice(0, 4) !== today.slice(0, 4) ? ` ${c.date.slice(0, 4)}` : ''} · ${esc(c.label)}</span>
+          <button type="button" data-unclose="${c.date}" aria-label="Remove ${shortDate(c.date)}">✕</button>
+        </div>`).join('')}</div>` : '<p class="muted">No upcoming closed days.</p>'}
+      <div class="two closed-add">
+        <label><span class="field-label">Date</span><input type="date" id="closed-date" min="${today}"></label>
+        <label><span class="field-label">Reason</span><input id="closed-label" maxlength="40" placeholder="Closed"></label>
+      </div>
+      <div class="row"><button type="button" id="closed-add">Add closed day</button></div>
+      <p class="muted small">Holidays, travel, sick days. Today shows a heads-up the gym day before, and offers missed sessions later in the week.</p>
     </div>
 
     ${bars.length ? `
@@ -1099,11 +1263,35 @@ async function renderSettings() {
 
   app.querySelectorAll('[data-eq]').forEach(input => {
     input.onchange = async () => {
+      const eq = input.dataset.eq;
       const v = parseFloat(input.value);
-      if (!(v > 0)) { input.value = num(settings.steps[input.dataset.eq]); return; }
-      settings.steps[input.dataset.eq] = v;
+      if (!(v >= 0)) { input.value = num(stepDefault(eq)); return; }
+      // Store only changes from plan.json so a plan update can still change the default.
+      if (v === plan.defaults?.step?.[eq]) delete settings.steps[eq];
+      else settings.steps[eq] = v;
       await saveSettings();
       toast('Saved');
+    };
+  });
+
+  app.querySelector('#closed-add').onclick = async () => {
+    const date = app.querySelector('#closed-date').value;
+    if (!date) return toast('Pick a date');
+    const label = app.querySelector('#closed-label').value.trim() || 'Closed';
+    settings.closedRemoved = settings.closedRemoved.filter(d => d !== date);
+    settings.closedAdded = [...settings.closedAdded.filter(c => c.date !== date), { date, label }];
+    await saveSettings();
+    toast('Closed day added');
+    renderSettings();
+  };
+  app.querySelectorAll('[data-unclose]').forEach(btn => {
+    btn.onclick = async () => {
+      const date = btn.dataset.unclose;
+      settings.closedAdded = settings.closedAdded.filter(c => c.date !== date);
+      if ((plan.closedDates ?? []).some(c => c.date === date) && !settings.closedRemoved.includes(date)) settings.closedRemoved.push(date);
+      await saveSettings();
+      toast('Removed');
+      renderSettings();
     };
   });
 

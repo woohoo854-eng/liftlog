@@ -255,3 +255,24 @@ body.logging .bottom-nav { display: none; }
   opacity: 0; pointer-events: none; transition: opacity .2s;
 }
 #toast.show { opacity: 1; }
+
+/* ---- v1.2: rest timer, closed days, missed session ---- */
+#rest {
+  position: fixed; left: 50%; bottom: calc(92px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+  min-height: 56px; padding: 0 22px; border-radius: 999px; gap: 10px;
+  background: var(--surface-2); border: 2px solid var(--accent); color: var(--text);
+  font-size: 1.1rem; box-shadow: 0 4px 16px rgba(0, 0, 0, .5); z-index: 5;
+}
+#rest[hidden] { display: none; }
+#rest b { font-size: 1.5rem; font-variant-numeric: tabular-nums; color: var(--accent); }
+#rest small { color: var(--muted); font-size: .8rem; }
+#rest.done { background: var(--good); border-color: var(--good); }
+#rest.done b { color: var(--on-good); }
+body.resting main { padding-bottom: calc(170px + env(safe-area-inset-bottom)); }
+body.resting #toast { bottom: calc(160px + env(safe-area-inset-bottom)); }
+
+.banner.missed .row { margin: 10px 0 0; }
+.banner.missed .row button { font-size: .95rem; padding: 0 10px; }
+.closed-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: var(--tap); border-bottom: 1px solid var(--border); }
+.closed-row button { min-width: var(--tap); padding: 0 12px; }
+.closed-add { margin-top: 10px; }

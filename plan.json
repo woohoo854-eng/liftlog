@@ -1,13 +1,14 @@
 {
-  "version": 2,
+  "version": 3,
   "progression": "Double progression: when all sets hit the top of the rep range at 1 to 2 RIR, add weight next session. Assisted moves: reduce assist.",
   "defaults": {
     "rest": 60,
     "step": {
       "Machine": 5,
-      "Dumbbell": 5,
-      "Cable": 5,
-      "Bench": 0
+      "Dumbbell": 2.5,
+      "Cable": 1,
+      "Bench": 5,
+      "Barbell": 2.5
     }
   },
   "lists": {
@@ -35,7 +36,8 @@
         "repMin": 8,
         "repMax": 12,
         "note": "Squeeze shoulder blades at the end",
-        "unit": "lb"
+        "unit": "lb",
+        "rest": 90
       },
       {
         "id": "db-incline-press",
@@ -53,7 +55,8 @@
             "key": "dumbbell",
             "label": "Dumbbell",
             "unit": "lb",
-            "note": "Log one dumbbell's weight"
+            "note": "Log one dumbbell's weight",
+            "perDumbbell": true
           },
           {
             "key": "barbell",
@@ -62,7 +65,8 @@
             "barWeight": 45,
             "perSideEntry": true
           }
-        ]
+        ],
+        "rest": 90
       },
       {
         "id": "lat-pulldown",
@@ -74,7 +78,8 @@
         "repMin": 8,
         "repMax": 12,
         "note": "Pull to upper chest, no leaning back",
-        "unit": "level"
+        "unit": "level",
+        "rest": 90
       },
       {
         "id": "overhead-press",
@@ -86,7 +91,7 @@
         "repMin": 8,
         "repMax": 12,
         "note": "",
-        "unit": "level"
+        "unit": "lb"
       },
       {
         "id": "face-pull",
@@ -141,7 +146,8 @@
           {
             "key": "dumbbell",
             "label": "Dumbbell",
-            "unit": "lb"
+            "unit": "lb",
+            "perDumbbell": true
           }
         ]
       },
@@ -194,7 +200,8 @@
         "repMin": 8,
         "repMax": 12,
         "note": "Stop at hamstring stretch, flat back",
-        "unit": "lb"
+        "unit": "lb",
+        "perDumbbell": true
       },
       {
         "id": "leg-extension",
@@ -223,14 +230,32 @@
       {
         "id": "db-calf-raise",
         "slot": "C2",
-        "name": "DB Standing Calf Raise",
+        "name": "Calf Raise",
         "machine": null,
-        "equipment": "Dumbbell",
+        "equipment": "Machine",
         "sets": 3,
         "repMin": 12,
         "repMax": 20,
-        "note": "Pause 1 sec at the bottom stretch",
-        "unit": "lb"
+        "note": "Seated calf machine is standard. Pause 1 sec at the bottom stretch",
+        "unit": "lb",
+        "variants": [
+          {
+            "key": "seated",
+            "label": "Seated Calf Machine",
+            "unit": "lb"
+          },
+          {
+            "key": "leg-press",
+            "label": "Leg Press #10",
+            "unit": "lb"
+          },
+          {
+            "key": "dumbbell",
+            "label": "Dumbbell",
+            "unit": "lb",
+            "perDumbbell": true
+          }
+        ]
       },
       {
         "id": "hip-abduction",
@@ -293,7 +318,9 @@
         "repMax": 12,
         "note": "Rest 75 to 90 sec",
         "rest": 90,
-        "unit": "lb"
+        "unit": "lb",
+        "perDumbbell": true,
+        "dumbbells": 1
       },
       {
         "id": "assisted-chin-up",
@@ -312,15 +339,28 @@
       {
         "id": "db-bulgarian-split-squat",
         "slot": "B1",
-        "name": "DB Bulgarian Split Squat",
-        "machine": null,
-        "equipment": "Dumbbell",
+        "name": "Single-Leg Leg Press",
+        "machine": 10,
+        "equipment": "Machine",
         "sets": 3,
         "repMin": 8,
         "repMax": 12,
-        "note": "Per leg; rear foot on bench",
+        "note": "One leg at a time; reps are per leg",
         "perSide": true,
-        "unit": "lb"
+        "unit": "lb",
+        "variants": [
+          {
+            "key": "single-leg-press",
+            "label": "Single-Leg Leg Press #10",
+            "unit": "lb"
+          },
+          {
+            "key": "bulgarian",
+            "label": "DB Bulgarian Split Squat",
+            "unit": "lb",
+            "perDumbbell": true
+          }
+        ]
       },
       {
         "id": "assisted-dip",
@@ -347,7 +387,9 @@
         "repMax": 12,
         "note": "Per side; log one side's weight",
         "perSide": true,
-        "unit": "lb"
+        "unit": "lb",
+        "perDumbbell": true,
+        "dumbbells": 1
       },
       {
         "id": "rear-delt-fly",
@@ -355,10 +397,22 @@
         "name": "Rear Delt Fly",
         "machine": 4,
         "equipment": "Machine",
-        "sets": 2,
+        "sets": 3,
         "repMin": 12,
         "repMax": 15,
         "note": "Face the pad, reverse fly",
+        "unit": "lb"
+      },
+      {
+        "id": "pec-fly",
+        "slot": "C3",
+        "name": "Pec Fly",
+        "machine": 4,
+        "equipment": "Machine",
+        "sets": 3,
+        "repMin": 12,
+        "repMax": 15,
+        "note": "Same machine as Rear Delt Fly, face out",
         "unit": "lb"
       },
       {
@@ -371,7 +425,8 @@
         "repMin": 10,
         "repMax": 12,
         "note": "",
-        "unit": "lb"
+        "unit": "lb",
+        "perDumbbell": true
       },
       {
         "id": "db-overhead-triceps-ext",
@@ -383,7 +438,9 @@
         "repMin": 10,
         "repMax": 12,
         "note": "One DB, both hands, seated",
-        "unit": "lb"
+        "unit": "lb",
+        "perDumbbell": true,
+        "dumbbells": 1
       }
     ],
     "optional": [
@@ -393,12 +450,25 @@
         "name": "Sit-Ups",
         "machine": null,
         "equipment": "Bench",
-        "sets": 1,
+        "sets": 3,
         "repMin": null,
         "repMax": null,
-        "note": "Log added weight (0 if bodyweight) and reps",
+        "note": "Log added weight (0 if bodyweight) and reps. Put the peg setting in Notes",
         "bodyweight": true,
-        "unit": "lb"
+        "unit": "lb",
+        "variants": [
+          {
+            "key": "decline-bench",
+            "label": "Decline Bench",
+            "unit": "lb"
+          },
+          {
+            "key": "ab-machine",
+            "label": "Ab Machine #12",
+            "unit": "lb",
+            "bodyweight": false
+          }
+        ]
       }
     ]
   },
@@ -429,7 +499,7 @@
       "list": "full"
     }
   ],
-  "machineKey": "1 Chest Press, 2 Row, 3 Overhead Press, 4 Fly/Rear Delt, 5 Arm Curl, 6 Arm Extension, 7 Hip Abduction/Adduction, 8 Seated Leg Curl, 9 Leg Extension, 10 Leg Press, 11 Back Extension",
+  "machineKey": "1 Chest Press, 2 Row, 3 Overhead Press, 4 Fly/Rear Delt, 5 Arm Curl, 6 Arm Extension, 7 Hip Abduction/Adduction, 8 Seated Leg Curl, 9 Leg Extension, 10 Leg Press, 11 Back Extension, 12 Abdominal (Eagle)",
   "units": {
     "lb": "Pounds",
     "level": "Plate or pin number on the stack (no pound markings)"
@@ -439,5 +509,19 @@
     "formula": "assistLb = 6 * level - 8",
     "minLevel": 4,
     "maxLevel": 20
-  }
+  },
+  "closedDates": [
+    {
+      "date": "2026-11-26",
+      "label": "Thanksgiving"
+    },
+    {
+      "date": "2026-12-25",
+      "label": "Christmas"
+    },
+    {
+      "date": "2027-01-01",
+      "label": "New Year's Day"
+    }
+  ]
 }
